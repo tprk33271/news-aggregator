@@ -91,14 +91,30 @@ def summarize_with_gemini(raw_text):
         return f"⚠️ ขัดข้อง: ไม่สามารถสรุปข่าวจาก AI ได้ในขณะนี้ ({e})"
 
 def send_telegram_message(text):
-    # Telegram max message length is 4096 characters
-    if len(text) > 4000:
-        text = text[:4000] + "\n... (ข้อความยาวเกินไป ถูกตัดออก)"
+    # Telegram max message length is 4096 characters. We use 4000 to be safe.
+    max_length = 4000
     
+    # Split message if it's too long
+    message_chunks = []
+    if len(text) > max_length:
+        for i in range(0, len(text), max_length):
+            message_chunks.append(text[i:i + max_length])
+    else:
+        message_chunks = [text]
+
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": text}
-    response = requests.post(url, json=payload, timeout=10)
-    print("Telegram API Response:", response.text)
+    
+    for i, chunk in enumerate(message_chunks):
+        # Add page indicator if multiple chunks
+        if len(message_chunks) > 1:
+            chunk = f"(Part {i+1}/{len(message_chunks)})\n" + chunk
+            
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": chunk}
+        try:
+            response = requests.post(url, json=payload, timeout=10)
+            print(f"Telegram API Response (Chunk {i+1}):", response.text)
+        except Exception as e:
+            print(f"Error sending Telegram chunk {i+1}: {e}")
 
 if __name__ == "__main__":
     print("Fetching data...")
