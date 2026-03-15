@@ -1,0 +1,1 @@
+0 */6 * * * cd /Users/macbook/.openclaw/workspace && /opt/homebrew/bin/python3 news_aggregator.py >> news_bot.log 2>&1
